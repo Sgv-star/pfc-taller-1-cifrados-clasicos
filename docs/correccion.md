@@ -4,7 +4,7 @@ Este informe argumenta que cada función implementada (puntos 1 a 5) hace lo que
 
 ## 0. Notación y lema base
 
-Sea $\Sigma=\{a,\dots,z\}$ el alfabeto de 26 letras minúsculas. Para un carácter $c$ escribimos $L(c)$ si $c\in\Sigma$ (las mayúsculas, tildes, dígitos, espacios y signos **no** son letras), y $\operatorname{pos}(c)=c-\texttt{'a'}\in\{0,\dots,25\}$ su posición. Un mensaje es una secuencia $m = c_1c_2\cdots c_n$; $\varepsilon$ es el mensaje vacío, $c\cdot r$ es el mensaje con cabeza $c$ y cola $r$, y $\cdot$ también denota concatenación. Además $\#_c(x)$ es el número de apariciones del carácter $c$ en $x$.
+Sea $\Sigma=\{a,\dots,z\}$ el alfabeto de 26 letras minúsculas. Para un carácter $c$ escribimos $L(c)$ si $c\in\Sigma$ (las mayúsculas, tildes, dígitos, espacios y signos **no** son letras), y $\mathrm{pos}(c)=c-\texttt{'a'}\in\{0,\dots,25\}$ su posición. Un mensaje es una secuencia $m = c_1c_2\cdots c_n$; $\varepsilon$ es el mensaje vacío, $c\cdot r$ es el mensaje con cabeza $c$ y cola $r$, y $\cdot$ también denota concatenación. Además $N_c(x)$ es el número de apariciones del carácter $c$ en $x$.
 
 El operador $\bmod$ matemático siempre devuelve un valor en $\{0,\dots,25\}$. En Scala, `%` puede dar negativos; la expresión `((x % 26) + 26) % 26` sí equivale a $x \bmod 26$, porque `x % 26` está en $(-26,26)$, sumarle 26 lo vuelve no negativo sin cambiar la clase módulo 26, y el segundo `% 26` lo lleva a $\{0,\dots,25\}$. Se asume que $k$ no es tan grande como para desbordar `Int` al sumar $p+k$.
 
@@ -13,7 +13,7 @@ El desplazamiento de un carácter es:
 $$
 f_k(c)=
 \begin{cases}
-\operatorname{chr}\big(97+((\operatorname{pos}(c)+k)\bmod 26)\big) & \text{si } L(c)\\
+\mathrm{chr}\big(97+((\mathrm{pos}(c)+k)\bmod 26)\big) & \text{si } L(c)\\
 c & \text{en otro caso}
 \end{cases}
 $$
@@ -24,7 +24,7 @@ $$
 2. $f_{-k}(f_k(c))=c$.
 3. Si $\lnot L(c)$ entonces $f_k(c)=c$.
 
-*Demostración.* (3) es la segunda rama de la definición. Para una letra con $p=\operatorname{pos}(c)$:
+*Demostración.* (3) es la segunda rama de la definición. Para una letra con $p=\mathrm{pos}(c)$:
 
 (1) $(p+k+26)\bmod 26=(p+k)\bmod 26$ porque $26\equiv 0 \pmod{26}$.
 
@@ -52,12 +52,12 @@ def cesar(m: Mensaje, k: Int): Mensaje = {
 }
 ```
 
-La rama de letra calcula $\operatorname{chr}\big(97+((p+k)\bmod 26)\big)=f_k(c)$ y la otra rama deja el carácter igual, que es $f_k(c)$ para una no-letra. En ambas, el resultado es $f_k(c)$ concatenado con el cifrado del resto.
+La rama de letra calcula $\mathrm{chr}\big(97+((p+k)\bmod 26)\big)=f_k(c)$ y la otra rama deja el carácter igual, que es $f_k(c)$ para una no-letra. En ambas, el resultado es $f_k(c)$ concatenado con el cifrado del resto.
 
 ### Especificación
 
 $$
-\operatorname{cesar}(m,k)=f_k(c_1)\cdot f_k(c_2)\cdots f_k(c_n)\qquad\text{para } m=c_1\cdots c_n .
+\mathrm{cesar}(m,k)=f_k(c_1)\cdot f_k(c_2)\cdots f_k(c_n)\qquad\text{para } m=c_1\cdots c_n .
 $$
 
 ### Teorema 1
@@ -67,7 +67,7 @@ Para todo $m\in\text{Mensaje}$ y todo $k\in\mathbb{Z}$, `cesar(m, k)` termina y 
 *Demostración por inducción estructural sobre $m$* (con $k$ fijo).
 
 - **Caso base** $m=\varepsilon$. La condición `m.isEmpty` es verdadera y se devuelve $\varepsilon$, que es el producto vacío de la especificación.
-- **Paso inductivo** $m=c\cdot r$. **Hipótesis:** `cesar(r, k)` $=f_k(r_1)\cdots f_k(r_{n-1})$. Como $m$ no es vacío, el resultado es $f_k(c)\cdot\operatorname{cesar}(r,k)$, que por hipótesis es $f_k(c)\cdot f_k(r_1)\cdots f_k(r_{n-1})$, es decir, la especificación para $m$.
+- **Paso inductivo** $m=c\cdot r$. **Hipótesis:** `cesar(r, k)` $=f_k(r_1)\cdots f_k(r_{n-1})$. Como $m$ no es vacío, el resultado es $f_k(c)\cdot\mathrm{cesar}(r,k)$, que por hipótesis es $f_k(c)\cdot f_k(r_1)\cdots f_k(r_{n-1})$, es decir, la especificación para $m$.
 - **Terminación.** Cada llamado recursivo recibe `m.tail`, de longitud $|m|-1$; la longitud es un natural estrictamente decreciente y el caso base la detiene en $0$. $\blacksquare$
 
 **Consecuencias** (se siguen del Teorema 1 y del Lema 1):
@@ -124,7 +124,7 @@ El valor `caracterCesar` es $f_k(\text{primero})$, con el mismo argumento del pu
 - **Estado:** la terna $(m,k,\text{acc})$. Sea $m_0$ el mensaje original.
 - **Invariante** $I(m,\text{acc})$:
   $$
-  \text{acc}\cdot\operatorname{cesar}(m,k)=\operatorname{cesar}(m_0,k).
+  \text{acc}\cdot\mathrm{cesar}(m,k)=\mathrm{cesar}(m_0,k).
   $$
 - **Transformación:** $(c\cdot r,\ \text{acc})\ \longmapsto\ (r,\ \text{acc}\cdot f_k(c))$.
 
@@ -134,16 +134,16 @@ Para todo $m_0$ y $k$, `cesarCola(m0, k)` $=$ `cesar(m0, k)`.
 
 *Demostración.*
 
-1. **Inicialización.** El llamado inicial usa $\text{acc}=\varepsilon$, entonces $\varepsilon\cdot\operatorname{cesar}(m_0,k)=\operatorname{cesar}(m_0,k)$: $I$ vale.
-2. **Conservación.** Supongamos $I(c\cdot r,\text{acc})$. Por el Teorema 1, $\operatorname{cesar}(c\cdot r,k)=f_k(c)\cdot\operatorname{cesar}(r,k)$. Entonces
+1. **Inicialización.** El llamado inicial usa $\text{acc}=\varepsilon$, entonces $\varepsilon\cdot\mathrm{cesar}(m_0,k)=\mathrm{cesar}(m_0,k)$: $I$ vale.
+2. **Conservación.** Supongamos $I(c\cdot r,\text{acc})$. Por el Teorema 1, $\mathrm{cesar}(c\cdot r,k)=f_k(c)\cdot\mathrm{cesar}(r,k)$. Entonces
    $$
-   \operatorname{cesar}(m_0,k)=\text{acc}\cdot f_k(c)\cdot\operatorname{cesar}(r,k)=(\text{acc}\cdot f_k(c))\cdot\operatorname{cesar}(r,k),
+   \mathrm{cesar}(m_0,k)=\text{acc}\cdot f_k(c)\cdot\mathrm{cesar}(r,k)=(\text{acc}\cdot f_k(c))\cdot\mathrm{cesar}(r,k),
    $$
    por asociatividad de la concatenación. Esto es exactamente $I(r,\text{acc}\cdot f_k(c))$: el invariante se conserva.
 3. **Terminación.** $|m|$ decrece en 1 en cada llamado, igual que en el punto 1.
-4. **Salida.** Cuando $m=\varepsilon$ la función devuelve acc. Por el invariante y $\operatorname{cesar}(\varepsilon,k)=\varepsilon$:
+4. **Salida.** Cuando $m=\varepsilon$ la función devuelve acc. Por el invariante y $\mathrm{cesar}(\varepsilon,k)=\varepsilon$:
    $$
-   \text{acc}=\text{acc}\cdot\varepsilon=\text{acc}\cdot\operatorname{cesar}(\varepsilon,k)=\operatorname{cesar}(m_0,k).\qquad\blacksquare
+   \text{acc}=\text{acc}\cdot\varepsilon=\text{acc}\cdot\mathrm{cesar}(\varepsilon,k)=\mathrm{cesar}(m_0,k).\qquad\blacksquare
    $$
 
 **Por qué es recursión de cola.** En la rama recursiva, la llamada a `cesarCola` es la *última* operación: no queda nada pendiente por hacer con su resultado (el trabajo de combinar, `acc + caracterCesar`, se hace *antes* de llamar, al construir el argumento). Por eso el compilador puede reutilizar el marco de pila y `@tailrec` compila. En `cesar`, en cambio, queda pendiente la concatenación después de cada llamado, y por eso no es de cola.
@@ -192,25 +192,25 @@ El `Map` es inmutable: `acc + (c -> n)` devuelve un mapa nuevo, no hay variables
 
 Sea $m[i..]$ el sufijo de $m$ que empieza en la posición $i$ (con $m[|m|..]=\varepsilon$).
 
-- **Estado:** $(i,\text{acc})$, con $\text{acc}(c)=0$ si $c\notin\operatorname{dom}(\text{acc})$.
+- **Estado:** $(i,\text{acc})$, con $\text{acc}(c)=0$ si $c\notin\mathrm{dom}(\text{acc})$.
 - **Invariante** $J$: $0\le i\le |m|$ y, para toda letra $c\in\Sigma$,
   $$
-  \text{acc}(c)+\#_c(m[i..])=\#_c(m).
+  \text{acc}(c)+N_c(m[i..])=N_c(m).
   $$
 - **Transformación:** $i\mapsto i+1$; si $L(m(i))$, se suma 1 a $\text{acc}(m(i))$; si no, acc queda igual.
 
 ### Teorema 3
 
-`frecuencias(m)` devuelve la lista de pares $(c,\#_c(m))$ con $\#_c(m)>0$, ordenada por frecuencia descendente y, a igual frecuencia, por letra ascendente; y el recorrido es de cola.
+`frecuencias(m)` devuelve la lista de pares $(c,N_c(m))$ con $N_c(m)>0$, ordenada por frecuencia descendente y, a igual frecuencia, por letra ascendente; y el recorrido es de cola.
 
 *Demostración.*
 
-1. **Inicialización.** Con $i=0$ y $\text{acc}=\emptyset$: $0+\#_c(m[0..])=\#_c(m)$. $J$ vale.
-2. **Conservación.** Sea $h=m(i)$; se tiene $\#_c(m[i..])=\#_c(m[i{+}1..])+[c=h]$.
-  - Si $L(h)$: el nuevo acc cumple $\text{acc}'(h)=\text{acc}(h)+1$ y $\text{acc}'(c)=\text{acc}(c)$ para $c\ne h$. Para $c=h$: $\text{acc}(h)+1+\#_h(m[i{+}1..])=\text{acc}(h)+\#_h(m[i..])=\#_h(m)$; para $c\neq h$ nada cambia. $J$ se conserva.
-  - Si $\lnot L(h)$: $\#_c(m[i..])=\#_c(m[i{+}1..])$ para toda letra $c$ y acc no cambia. $J$ se conserva.
+1. **Inicialización.** Con $i=0$ y $\text{acc}=\emptyset$: $0+N_c(m[0..])=N_c(m)$. $J$ vale.
+2. **Conservación.** Sea $h=m(i)$; se tiene $N_c(m[i..])=N_c(m[i{+}1..])+[c=h]$.
+    - Si $L(h)$: el nuevo acc cumple $\text{acc}'(h)=\text{acc}(h)+1$ y $\text{acc}'(c)=\text{acc}(c)$ para $c\ne h$. Para $c=h$: $\text{acc}(h)+1+N_h(m[i{+}1..])=\text{acc}(h)+N_h(m[i..])=N_h(m)$; para $c\neq h$ nada cambia. $J$ se conserva.
+    - Si $\lnot L(h)$: $N_c(m[i..])=N_c(m[i{+}1..])$ para toda letra $c$ y acc no cambia. $J$ se conserva.
 3. **Terminación.** La medida $|m|-i$ es un natural que decrece en 1 por llamado y la recursión se detiene cuando $i\ge|m|$.
-4. **Salida.** Con $i\ge|m|$ el sufijo es vacío, $\#_c(\varepsilon)=0$ y $J$ da $\text{acc}(c)=\#_c(m)$ para toda letra. Además, solo están en el mapa las letras que se incrementaron al menos una vez, o sea las que aparecen: *las letras ausentes no salen* y los dígitos, espacios y signos nunca entran.
+4. **Salida.** Con $i\ge|m|$ el sufijo es vacío, $N_c(\varepsilon)=0$ y $J$ da $\text{acc}(c)=N_c(m)$ para toda letra. Además, solo están en el mapa las letras que se incrementaron al menos una vez, o sea las que aparecen: *las letras ausentes no salen* y los dígitos, espacios y signos nunca entran.
 5. **Orden.** `sortBy` con la llave $(-n,c)$ ordena por el orden lexicográfico de pares: primero por $-n$ ascendente (frecuencia descendente) y, ante empate, por $c$ ascendente (orden alfabético). Como las letras del mapa son distintas, dos elementos nunca tienen la misma llave, así que el orden es **total** y el resultado es único. $\blacksquare$
 
 **Es de cola:** el llamado a `contar` es lo último que se ejecuta en sus dos ramas recursivas; la ordenación ocurre después, fuera de la recursión, y el enunciado permite usar la biblioteca para ella.
@@ -261,7 +261,7 @@ def romperCesar(m: Mensaje): Mensaje = {
 
 ### Corrección respecto de la especificación
 
-**Lema 2.** `conteo(c)` $=\#_c(m)$ para toda letra que aparece, y `conteo` no contiene otras claves. *Prueba:* el `filter` conserva exactamente las letras minúsculas; `groupBy(identity)` agrupa las apariciones iguales, y la longitud de cada grupo es $\#_c(m)$.
+**Lema 2.** `conteo(c)` $=N_c(m)$ para toda letra que aparece, y `conteo` no contiene otras claves. *Prueba:* el `filter` conserva exactamente las letras minúsculas; `groupBy(identity)` agrupa las apariciones iguales, y la longitud de cada grupo es $N_c(m)$.
 
 **Lema 3.** `letraMasFrecuente` es la primera letra de `frecuencias(m)`. *Prueba:* `maxFrecuencia` es el mayor conteo, `candidatas` son las letras que lo alcanzan y `candidatas.min` es la menor alfabéticamente. Por el Teorema 3, la cabeza de `frecuencias(m)` es el elemento de menor llave $(-n,c)$, es decir, de mayor $n$ y, entre esas, de menor $c$. Es la misma letra.
 
@@ -271,21 +271,21 @@ $$
 d(m)=
 \begin{cases}
 0 & \text{si } m \text{ no tiene letras}\\
-\big(\operatorname{pos}(\ell^*(m))-\operatorname{pos}(\texttt{e})\big)\bmod 26 & \text{en otro caso}
+\big(\mathrm{pos}(\ell^*(m))-\mathrm{pos}(\texttt{e})\big)\bmod 26 & \text{en otro caso}
 \end{cases}
 $$
 
-que es la distancia entre `e` y la letra más frecuente, normalizada a $\{0,\dots,25\}$ (Lema 2, Lema 3 y la nota del apartado 0 sobre `%`). Con los ejemplos del enunciado: para `"h"`, $(7-4)\bmod 26=3$; para `"hhhaaa"` gana `a` por empate y $(0-4)\bmod 26=22$; para `"123"` no hay letras y $d=0$. `romperCesar` es, por definición, descifrar con la estimación: $\operatorname{cesar}(m,-d(m))$.
+que es la distancia entre `e` y la letra más frecuente, normalizada a $\{0,\dots,25\}$ (Lema 2, Lema 3 y la nota del apartado 0 sobre `%`). Con los ejemplos del enunciado: para `"h"`, $(7-4)\bmod 26=3$; para `"hhhaaa"` gana `a` por empate y $(0-4)\bmod 26=22$; para `"123"` no hay letras y $d=0$. `romperCesar` es, por definición, descifrar con la estimación: $\mathrm{cesar}(m,-d(m))$.
 
 ### Teorema 4 (cuándo el método acierta)
 
-Sea $t$ un texto claro y $m=\operatorname{cesar}(t,k)$. Si en $t$ la letra `e` es la **única** más frecuente (estrictamente más frecuente que cualquier otra letra), entonces $d(m)=k\bmod 26$ y $\operatorname{romperCesar}(m)=t$.
+Sea $t$ un texto claro y $m=\mathrm{cesar}(t,k)$. Si en $t$ la letra `e` es la **única** más frecuente (estrictamente más frecuente que cualquier otra letra), entonces $d(m)=k\bmod 26$ y $\mathrm{romperCesar}(m)=t$.
 
-*Demostración.* Como $f_k$ es una biyección de $\Sigma$ en $\Sigma$ (Lema 1.2), $\#_{f_k(x)}(m)=\#_x(t)$ para toda letra $x$: cifrar solo renombra las letras. Por tanto la letra estrictamente más frecuente de $m$ es $f_k(\texttt{e})$, con posición $(4+k)\bmod 26$, y al ser única no interviene el desempate. Así
+*Demostración.* Como $f_k$ es una biyección de $\Sigma$ en $\Sigma$ (Lema 1.2), $N_{f_k(x)}(m)=N_x(t)$ para toda letra $x$: cifrar solo renombra las letras. Por tanto la letra estrictamente más frecuente de $m$ es $f_k(\texttt{e})$, con posición $(4+k)\bmod 26$, y al ser única no interviene el desempate. Así
 $$
 d(m)=\big((4+k)\bmod 26-4\big)\bmod 26=k\bmod 26 .
 $$
-Por el Lema 1 (puntos 1 y 2), $\operatorname{cesar}(m,-d(m))=\operatorname{cesar}(\operatorname{cesar}(t,k),-k)=t$. $\blacksquare$
+Por el Lema 1 (puntos 1 y 2), $\mathrm{cesar}(m,-d(m))=\mathrm{cesar}(\mathrm{cesar}(t,k),-k)=t$. $\blacksquare$
 
 Ejemplo que sí acierta: `romperCesar(cesar("el mensaje secreto", 7))`. En `"el mensaje secreto"` la `e` aparece 5 veces y ninguna otra letra llega a eso; cifrada con $k=7$ la más frecuente es `l`, $d=(11-4)\bmod 26=7$ y se recupera el original.
 
@@ -303,20 +303,22 @@ El Teorema 4 da la respuesta por contraposición: el método **falla** cuando la
 **(a) La `e` no es la más frecuente.** Sea $t=\texttt{"aaa"}$ y $k=3$, de modo que $m=\texttt{"ddd"}$.
 
 - El conteo es `Map('d' -> 3)`, luego $d=(3-4)\bmod 26=25$.
-- `romperCesar("ddd")` $=\operatorname{cesar}(\texttt{"ddd"},-25)=\texttt{"eee"}\neq\texttt{"aaa"}$.
+- `romperCesar("ddd")` $=\mathrm{cesar}(\texttt{"ddd"},-25)=\texttt{"eee"}\neq\texttt{"aaa"}$.
 
 El método supone que `d` es una `e` desplazada y "descifra" hacia un texto lleno de `e`.
 
 **(b) Empate que cambia el ganador.** Sea $t=\texttt{"ea"}$ y $k=0$, de modo que $m=\texttt{"ea"}$.
 
 - `a` y `e` empatan con 1 aparición; gana `a` por ser menor, luego $d=(0-4)\bmod 26=22$.
-- `romperCesar("ea")` $=\operatorname{cesar}(\texttt{"ea"},-22)=\texttt{"ie"}\neq\texttt{"ea"}$.
+- `romperCesar("ea")` $=\mathrm{cesar}(\texttt{"ea"},-22)=\texttt{"ie"}\neq\texttt{"ea"}$.
 
 Aquí el texto estaba sin cifrar ($k=0$) y la `e` empataba con la `a`: el desempate alfabético eligió la letra equivocada.
 
 ---
 
-## 5 Punto 5 - 'combinaciones' y 'vigenere'
+## 5. Punto 5 — `combinaciones` y `vigenere`
+
+### 5.1 `combinaciones`
 
 #### Implementación analizada
 
@@ -402,7 +404,7 @@ flowchart LR
     D --> E["devuelve 16250"]
 ```
 
-### 5.1 `vigenere`
+### 5.2 `vigenere`
 
 #### Implementación analizada
 
@@ -424,14 +426,14 @@ def vigenere(m: Mensaje, clave: Clave): Mensaje = {
 }
 ```
 
-Se asume que la clave solo tiene letras minúsculas (el enunciado no define otro caso). Sea $K=|\text{clave}|$ y $\kappa_j=\operatorname{pos}(\text{clave}(j))\in\{0,\dots,25\}$ para $0\le j<K$. Entonces la variable `k` del código es $\kappa_j$, y `cifrada` es $f_{\kappa_j}(c)$ porque $0\le c-\texttt{'a'}+k\le 50$ y no hay negativos.
+Se asume que la clave solo tiene letras minúsculas (el enunciado no define otro caso). Sea $K=|\text{clave}|$ y $\kappa_j=\mathrm{pos}(\text{clave}(j))\in\{0,\dots,25\}$ para $0\le j<K$. Entonces la variable `k` del código es $\kappa_j$, y `cifrada` es $f_{\kappa_j}(c)$ porque $0\le c-\texttt{'a'}+k\le 50$ y no hay negativos.
 
 #### Especificación
 
 Sea $m=c_1\cdots c_n$ y sea $\lambda_p$ el número de letras entre $c_1$ y $c_{p-1}$ (las que ya consumieron clave). Entonces
 
 $$
-\operatorname{vigenere}(m,\text{clave})=y_1\cdots y_n,\qquad
+\mathrm{vigenere}(m,\text{clave})=y_1\cdots y_n,\qquad
 y_p=
 \begin{cases}
 f_{\kappa_{\,\lambda_p\bmod K}}(c_p) & \text{si } L(c_p)\\
@@ -466,7 +468,7 @@ Si $K=0$, `vigenere(m, "")` $=m$. Si $K\ge1$, `vigenere(m, clave)` cumple la esp
 
 **Es de cola:** en las dos ramas la llamada a `aux` es la última operación; la concatenación `acc + cifrada` o `acc + c` se hace al construir el argumento.
 
-**Caso particular.** Con una clave de una sola letra, $K=1$ y $\kappa_0=\kappa$ para todo índice, luego `vigenere(m, clave)` $=\operatorname{cesar}(m,\kappa)$: Vigenère generaliza César.
+**Caso particular.** Con una clave de una sola letra, $K=1$ y $\kappa_0=\kappa$ para todo índice, luego `vigenere(m, clave)` $=\mathrm{cesar}(m,\kappa)$: Vigenère generaliza César.
 
 **Verificaciones con los ejemplos del enunciado.**
 
@@ -506,8 +508,8 @@ flowchart LR
 | Función | Técnica de prueba | Resultado |
 |---|---|---|
 | `cesar` | Inducción estructural sobre $m$ | $f_k$ aplicado letra a letra |
-| `cesarCola` | Invariante $\text{acc}\cdot\operatorname{cesar}(m,k)=\operatorname{cesar}(m_0,k)$ | Igual a `cesar` para toda entrada |
-| `frecuencias` | Invariante $\text{acc}(c)+\#_c(m[i..])=\#_c(m)$ | Conteo exacto y orden total |
+| `cesarCola` | Invariante $\text{acc}\cdot\mathrm{cesar}(m,k)=\mathrm{cesar}(m_0,k)$ | Igual a `cesar` para toda entrada |
+| `frecuencias` | Invariante $\text{acc}(c)+N_c(m[i..])=N_c(m)$ | Conteo exacto y orden total |
 | `desplazamientoProbable` / `romperCesar` | Biyección de $f_k$ y unicidad del máximo | Correcto si `e` es el máximo único; falla con `"aaa"` ($k=3$) y `"ea"` ($k=0$) |
 | `combinaciones` | Inducción sobre $n$ (forma cerrada) e invariante $\text{acc}\cdot(a-1)^r=a(a-1)^{n-1}$ | $C(n,a)=a(a-1)^{n-1}$ para $n\ge1$ |
 | `vigenere` | Invariante $\text{acc}=y_1\cdots y_i$ y $j=\lambda_{i+1}\bmod K$ | Clave cíclica que solo avanza con letras |
