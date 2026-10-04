@@ -316,7 +316,192 @@ Aquí el texto estaba sin cifrar ($k=0$) y la `e` empataba con la `a`: el desemp
 
 ---
 
-## 5. Resumen
+## 5 Punto 5 - 'combinaciones' y 'vigenere'
+
+#### Implementación analizada
+
+```scala
+def combinaciones(n: Int, a: Int): BigInt = {
+  @tailrec
+  def aux(restantes: Int, acc: BigInt): BigInt =
+    if (restantes == 0) acc
+    else aux(restantes - 1, acc * (a - 1))
+  if (n <= 0) BigInt(1)
+  else if (a <= 0) BigInt(0)
+  else aux(n - 1, BigInt(a))
+}
+```
+
+#### Especificación
+
+$C(n,a)$ es el número de mensajes de longitud $n$ sobre un alfabeto de $a$ letras sin dos letras iguales seguidas ($n\ge0$, $a\ge0$). El enunciado la define por la recurrencia
+
+$$
+C(0,a)=1,\qquad C(1,a)=a,\qquad C(n,a)=(a-1)\cdot C(n-1,a)\quad (n>1).
+$$
+
+La recurrencia cuenta bien porque cada mensaje válido de longitud $n>1$ se obtiene de forma **única** a partir de uno válido de longitud $n-1$ (quitándole la última letra, que sigue siendo válido) y una última letra distinta de la última del prefijo; como el prefijo no es vacío, hay exactamente $a-1$ elecciones. El caso $n=1$ se trata aparte: aplicar la recurrencia daría $(a-1)\cdot C(0,a)=a-1\neq a$, porque un mensaje de una letra no tiene letra anterior que evitar.
+
+El código no es una traducción literal de la recurrencia (acumula hacia adelante), así que hay que probar que calcula lo mismo.
+
+#### Lema 4 (forma cerrada)
+
+Para $n\ge1$: $C(n,a)=a\,(a-1)^{\,n-1}$ (con $(a-1)^0=1$).
+
+*Demostración por inducción sobre $n$.* Para $n=1$: $a\,(a-1)^0=a=C(1,a)$. Para $n>1$, con la hipótesis $C(n-1,a)=a(a-1)^{n-2}$:
+$$
+C(n,a)=(a-1)\cdot a\,(a-1)^{n-2}=a\,(a-1)^{n-1}.\qquad\blacksquare
+$$
+
+#### Estado, invariante y transformación (para `aux`)
+
+Sea $R=a\,(a-1)^{\,n-1}$, con $n\ge1$ y $a\ge1$ fijos.
+
+- **Estado:** el par $(r,\text{acc})$, con $r=\text{restantes}$.
+- **Invariante** $I(r,\text{acc})$: $\ r\ge0$ y
+  $$
+  \text{acc}\cdot(a-1)^{\,r}=R .
+  $$
+- **Transformación:** $(r,\text{acc})\longmapsto(r-1,\ \text{acc}\cdot(a-1))$.
+
+#### Teorema 5
+
+Para todo $n\ge0$ y $a\ge0$, `combinaciones(n, a)` termina y vale $C(n,a)$.
+
+*Demostración.* Se analizan las tres ramas de la función externa.
+
+- **$n=0$.** Se devuelve 1, que es $C(0,a)$.
+- **$n\ge1$ y $a=0$.** Se devuelve 0. Con un alfabeto vacío no hay mensajes de longitud positiva, y concuerda con $C(1,0)=0$ y $C(n,0)=(0-1)\cdot C(n-1,0)=0$.
+- **$n\ge1$ y $a\ge1$.** Se llama `aux(n - 1, a)`.
+    1. **Inicialización.** Con $r=n-1\ge0$ y $\text{acc}=a$: $a\cdot(a-1)^{n-1}=R$. $I$ vale.
+    2. **Conservación.** Si $I(r,\text{acc})$ y $r>0$, el nuevo estado cumple
+       $$
+       \big(\text{acc}\cdot(a-1)\big)\cdot(a-1)^{\,r-1}=\text{acc}\cdot(a-1)^{\,r}=R,
+       $$
+       es decir, $I(r-1,\text{acc}\cdot(a-1))$.
+    3. **Terminación.** $r$ es un natural que decrece en 1 por llamado, desde $n-1$ hasta $0$.
+    4. **Salida.** Con $r=0$ se devuelve acc y el invariante da $\text{acc}\cdot(a-1)^0=\text{acc}=R$. Por el Lema 4, $R=C(n,a)$. $\blacksquare$
+
+**Observaciones.**
+
+- Para $n<0$ el código devuelve 1; ese valor está fuera del dominio del enunciado ($n\ge0$) y no afecta la prueba.
+- La recursión es **de cola**: el llamado a `aux` es lo último que se ejecuta y la multiplicación se hace antes, al construir el argumento.
+- Se usa `BigInt` porque $a(a-1)^{n-1}$ crece exponencialmente y desborda `Int` y `Long` con $n$ moderado.
+
+**Verificación con los ejemplos del enunciado:** $C(3,26)=26\cdot25\cdot25=16250$; $C(2,2)=2\cdot1=2$; $C(0,26)=1$; $C(1,26)=26$.
+
+#### Cómo se encadenan los llamados
+
+Para `combinaciones(3, 26)` se entra con `aux(2, 26)` y el acumulador absorbe cada factor $a-1=25$:
+
+```mermaid
+flowchart LR
+    A["combinaciones(3, 26)"] --> B["aux(2, 26)"]
+    B -->|"26 * 25"| C["aux(1, 650)"]
+    C -->|"650 * 25"| D["aux(0, 16250)"]
+    D --> E["devuelve 16250"]
+```
+
+### 5.1 `vigenere`
+
+#### Implementación analizada
+
+```scala
+def vigenere(m: Mensaje, clave: Clave): Mensaje = {
+  @tailrec
+  def aux(i: Int, j: Int, acc: Mensaje): Mensaje =
+    if (i >= m.length) acc
+    else {
+      val c = m(i)
+      if (esMinuscula(c)) {
+        val k = (((clave(j) - 'a') % letras) + letras) % letras
+        val cifrada = ((c - 'a' + k) % letras + 'a').toChar
+        aux(i + 1, (j + 1) % clave.length, acc + cifrada)
+      } else
+        aux(i + 1, j, acc + c)
+    }
+  if (clave.isEmpty) m else aux(0, 0, "")
+}
+```
+
+Se asume que la clave solo tiene letras minúsculas (el enunciado no define otro caso). Sea $K=|\text{clave}|$ y $\kappa_j=\operatorname{pos}(\text{clave}(j))\in\{0,\dots,25\}$ para $0\le j<K$. Entonces la variable `k` del código es $\kappa_j$, y `cifrada` es $f_{\kappa_j}(c)$ porque $0\le c-\texttt{'a'}+k\le 50$ y no hay negativos.
+
+#### Especificación
+
+Sea $m=c_1\cdots c_n$ y sea $\lambda_p$ el número de letras entre $c_1$ y $c_{p-1}$ (las que ya consumieron clave). Entonces
+
+$$
+\operatorname{vigenere}(m,\text{clave})=y_1\cdots y_n,\qquad
+y_p=
+\begin{cases}
+f_{\kappa_{\,\lambda_p\bmod K}}(c_p) & \text{si } L(c_p)\\
+c_p & \text{en otro caso.}
+\end{cases}
+$$
+
+Es decir, la clave se repite cíclicamente, solo las letras avanzan en ella, y los demás caracteres se copian sin consumir letra de la clave.
+
+#### Estado, invariante y transformación (para `aux`)
+
+- **Estado:** la terna $(i,j,\text{acc})$.
+- **Invariante** $V(i,j,\text{acc})$: $0\le i\le n$ y
+  $$
+  \text{acc}=y_1\cdots y_i \qquad\text{y}\qquad j=\lambda_{i+1}\bmod K ,
+  $$
+  donde $\lambda_{i+1}$ es el número de letras entre $c_1$ y $c_i$.
+- **Transformación:** si $L(c_{i+1})$, $(i,j,\text{acc})\mapsto(i+1,\ (j+1)\bmod K,\ \text{acc}\cdot f_{\kappa_j}(c_{i+1}))$; si no, $(i,j,\text{acc})\mapsto(i+1,\ j,\ \text{acc}\cdot c_{i+1})$.
+
+#### Teorema 6
+
+Si $K=0$, `vigenere(m, "")` $=m$. Si $K\ge1$, `vigenere(m, clave)` cumple la especificación.
+
+*Demostración.* Con clave vacía la guarda devuelve $m$. Si $K\ge1$, se llama `aux(0, 0, "")`.
+
+1. **Inicialización.** Con $i=0$, $\text{acc}=\varepsilon$ (el producto vacío $y_1\cdots y_0$) y $j=0=\lambda_1\bmod K$, porque antes de $c_1$ no hay letras. $V$ vale.
+2. **Conservación.** Supongamos $V(i,j,\text{acc})$ con $i<n$ y sea $c=c_{i+1}$.
+    - Si $L(c)$: por el invariante $j=\lambda_{i+1}\bmod K$, luego $k=\kappa_j=\kappa_{\lambda_{i+1}\bmod K}$ y el carácter agregado es $f_{\kappa_{\lambda_{i+1}\bmod K}}(c)=y_{i+1}$. El nuevo índice es $(j+1)\bmod K=(\lambda_{i+1}+1)\bmod K=\lambda_{i+2}\bmod K$, porque $c$ es una letra y suma 1 al conteo. $V$ se conserva. Además, como $0\le j<K$ siempre (se mantiene con `% clave.length`), `clave(j)` es un acceso válido.
+    - Si $\lnot L(c)$: el carácter agregado es $c=y_{i+1}$ y $j$ no cambia. Como $c$ no es letra, $\lambda_{i+2}=\lambda_{i+1}$, así que $j=\lambda_{i+2}\bmod K$. $V$ se conserva.
+3. **Terminación.** La medida $n-i$ es un natural que decrece en 1 por llamado.
+4. **Salida.** Con $i\ge n$ el invariante da $\text{acc}=y_1\cdots y_n$, que es la especificación. $\blacksquare$
+
+**Es de cola:** en las dos ramas la llamada a `aux` es la última operación; la concatenación `acc + cifrada` o `acc + c` se hace al construir el argumento.
+
+**Caso particular.** Con una clave de una sola letra, $K=1$ y $\kappa_0=\kappa$ para todo índice, luego `vigenere(m, clave)` $=\operatorname{cesar}(m,\kappa)$: Vigenère generaliza César.
+
+**Verificaciones con los ejemplos del enunciado.**
+
+- `vigenere("ataque", "sol")`, con $\kappa=(18,14,11)$:
+  $a{+}18=s$, $t{+}14=h$, $a{+}11=l$, $q{+}18=i$, $u{+}14=i$, $e{+}11=p$, que da `"shliip"`.
+- `vigenere("hola mundo", "ab")`, con $\kappa=(0,1)$: `h,o,l,a` $\to$ `h,p,l,b`; el espacio se copia sin mover $j$ (que queda en $0$), así que `m` usa $\kappa_0=0$, y `mundo` $\to$ `m,v,n,e,o`, que da `"hplb mvneo"`.
+- `vigenere("casa", "")` devuelve `"casa"` por la guarda de clave vacía.
+
+#### Cómo se encadenan los llamados
+
+Para `vigenere("ataque", "sol")` el estado $(i,j,\text{acc})$ evoluciona así; nótese cómo $j$ da la vuelta al llegar a $K=3$:
+
+```mermaid
+flowchart TD
+    A["aux(0, 0, '')"] -->|"a + s = s"| B["aux(1, 1, 's')"]
+    B -->|"t + o = h"| C["aux(2, 2, 'sh')"]
+    C -->|"a + l = l"| D["aux(3, 0, 'shl')"]
+    D -->|"q + s = i"| E["aux(4, 1, 'shli')"]
+    E -->|"u + o = i"| F["aux(5, 2, 'shlii')"]
+    F -->|"e + l = p"| G["aux(6, 0, 'shliip')"]
+    G -->|"i >= 6: devuelve acc"| H["'shliip'"]
+```
+
+Y para `"hola mundo"` con `"ab"`, el espacio avanza $i$ pero no $j$:
+
+```mermaid
+flowchart LR
+    A["aux(3, 1, 'hpl')"] -->|"a + b = b"| B["aux(4, 0, 'hplb')"]
+    B -->|"espacio: copia, j no cambia"| C["aux(5, 0, 'hplb ')"]
+    C -->|"m + a = m"| D["aux(6, 1, 'hplb m')"]
+```
+
+---
+
+## 6. Resumen
 
 | Función | Técnica de prueba | Resultado |
 |---|---|---|
@@ -324,4 +509,5 @@ Aquí el texto estaba sin cifrar ($k=0$) y la `e` empataba con la `a`: el desemp
 | `cesarCola` | Invariante $\text{acc}\cdot\operatorname{cesar}(m,k)=\operatorname{cesar}(m_0,k)$ | Igual a `cesar` para toda entrada |
 | `frecuencias` | Invariante $\text{acc}(c)+\#_c(m[i..])=\#_c(m)$ | Conteo exacto y orden total |
 | `desplazamientoProbable` / `romperCesar` | Biyección de $f_k$ y unicidad del máximo | Correcto si `e` es el máximo único; falla con `"aaa"` ($k=3$) y `"ea"` ($k=0$) |
-
+| `combinaciones` | Inducción sobre $n$ (forma cerrada) e invariante $\text{acc}\cdot(a-1)^r=a(a-1)^{n-1}$ | $C(n,a)=a(a-1)^{n-1}$ para $n\ge1$ |
+| `vigenere` | Invariante $\text{acc}=y_1\cdots y_i$ y $j=\lambda_{i+1}\bmod K$ | Clave cíclica que solo avanza con letras |
