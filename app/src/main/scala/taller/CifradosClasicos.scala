@@ -24,7 +24,17 @@ class CifradosClasicos {
   // Punto 1 -------------------------------------------------------------------
 
   /** César con recursión lineal: una operación pendiente por letra. */
-  def cesar(m: Mensaje, k: Int): Mensaje = ???
+  def cesar(m: Mensaje, k: Int): Mensaje = {
+    if (m.isEmpty) ""
+    else{
+      val cifrado = m.head
+      if(esMinuscula(cifrado))
+        ((((cifrado - primera + k) % 26) + 26) % 26 + primera).toChar + cesar(m.tail, k)
+      else cifrado + cesar(m.tail, k)
+    }
+  }
+
+
 
   // Punto 2 -------------------------------------------------------------------
 
@@ -56,7 +66,22 @@ class CifradosClasicos {
    * Cuenta las letras minúsculas del mensaje, de mayor a menor frecuencia y,
    * en empate, en orden alfabético. El recorrido es recursivo de cola.
    */
-  def frecuencias(m: Mensaje): Frecuencias = ???
+  def frecuencias(m: Mensaje): Frecuencias = {
+     
+    @tailrec
+    def contar(i: Int, acc: Map[Char, Int]): Map[Char, Int] =
+      if (i >= m.length) acc
+      else {
+        val c = m(i)
+        if (c >= 'a' && c <= 'z')
+          contar(i + 1, acc + (c -> (acc.getOrElse(c, 0) + 1)))
+        else
+          contar(i + 1, acc)
+      }
+
+    contar(0, Map.empty[Char, Int]).toList
+      .sortBy { case (letra, frecuencia) => (-frecuencia, letra) }
+  }
 
   // Punto 4 -------------------------------------------------------------------
 
@@ -64,9 +89,28 @@ class CifradosClasicos {
    * Supone que la letra más frecuente del mensaje cifrado es la 'e' del
    * original y devuelve la distancia entre las dos. Sin letras, cero.
    */
-  def desplazamientoProbable(m: Mensaje): Int = ???
+  def desplazamientoProbable(m: Mensaje): Int = {
+        val conteo: Map[Char, Int] =
+      m.toLowerCase
+        .filter(c => c >= 'a' && c <= 'z')
+        .groupBy(identity)
+        .map { case (letra, ocurrencias) => letra -> ocurrencias.length }
+ 
+    if (conteo.isEmpty) {
+      0
+    } else {
+      val maxFrecuencia = conteo.values.max
+      val candidatas = conteo.collect { case (letra, f) if f == maxFrecuencia => letra }
+      val letraMasFrecuente = candidatas.min
+ 
+      (((letraMasFrecuente - 'e') % 26) + 26) % 26
+    }
+  }
 
-  def romperCesar(m: Mensaje): Mensaje = ???
+  def romperCesar(m: Mensaje): Mensaje = {
+        val k = desplazamientoProbable(m)
+        cesar(m, -k)
+  }
 
   // Punto 5 -------------------------------------------------------------------
 
