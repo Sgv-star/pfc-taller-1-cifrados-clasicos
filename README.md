@@ -15,6 +15,11 @@ parte de la entrega: si falta alguno, la entrega se sanciona con el 20 % de
 la nota.
 
 | Nombre completo | Código |
+|---|---|
+|Santiago Gonzalez Villada |2559994 |
+|Juan Manuel Vásquez Segura |2559961 |
+|Omar Denilson Riascos Córdoba |2559990 |
+|Manuel Alejandro Ortiz Zabala |2559767 |
 | --------------- | ------ |
 |                 |        |
 |                 |        |
