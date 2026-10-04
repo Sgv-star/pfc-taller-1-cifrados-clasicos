@@ -118,11 +118,32 @@ class CifradosClasicos {
    * Cuántos mensajes de longitud n se forman con a letras sin dos iguales
    * seguidas.
    */
-  def combinaciones(n: Int, a: Int): BigInt = ???
-
+  def combinaciones(n: Int, a: Int): BigInt = {
+    @tailrec
+    def aux(restantes: Int, acc: BigInt): BigInt =
+      if (restantes == 0) acc
+      else aux(restantes - 1, acc * (a - 1))
+    if (n <= 0) BigInt(1)
+    else if (a <= 0) BigInt(0)
+    else aux(n - 1, BigInt(a))
+  }
   /**
    * Vigenère: cada letra se corre según la letra de la clave que le toca. Lo
    * que no es letra minúscula se copia y no consume clave.
    */
-  def vigenere(m: Mensaje, clave: Clave): Mensaje = ???
+  def vigenere(m: Mensaje, clave: Clave): Mensaje ={
+    @tailrec
+    def aux(i: Int, j: Int, acc: Mensaje): Mensaje =
+      if (i >= m.length) acc
+      else {
+        val c = m(i)
+        if (esMinuscula(c)) {
+          val k = (((clave(j) - 'a') % letras) + letras) % letras
+          val cifrada = ((c - 'a' + k) % letras + 'a').toChar
+          aux(i + 1, (j + 1) % clave.length, acc + cifrada)
+        } else
+          aux(i + 1, j, acc + c)
+      }
+    if (clave.isEmpty) m else aux(0, 0, "")
+  }
 }
