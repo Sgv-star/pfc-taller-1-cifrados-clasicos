@@ -3,7 +3,7 @@
 Fundamentos de Programación Funcional y Concurrente — Taller 1: cifrados clásicos.
 Este informe muestra cómo se ejecuta paso a paso cada función en
 `app/src/main/scala/taller/CifradosClasicos.scala` y cuál es el estado de la pila
-de llamados en cada punto.
+de llamados en cada punto. Se cubren los cinco puntos del taller.
 
 El modelo de datos común es:
 
@@ -264,3 +264,137 @@ sequenceDiagram
     R->>C: descifrar con -7
     C-->>R: "el mensaje secreto"
 ```
+
+## 5. Punto 5: `combinaciones` y `vigenere`
+
+### 5.1 `combinaciones(n, a)`
+
+```scala
+def combinaciones(n: Int, a: Int): BigInt = {
+  @tailrec
+  def aux(restantes: Int, acc: BigInt): BigInt =
+    if (restantes == 0) acc
+    else aux(restantes - 1, acc * (a - 1))
+  if (n <= 0) BigInt(1)
+  else if (a <= 0) BigInt(0)
+  else aux(n - 1, BigInt(a))
+}
+```
+
+El número de mensajes de longitud $n$ sin dos letras iguales seguidas cumple
+$C(0,a) = 1$, $C(1,a) = a$ y $C(n,a) = (a-1) \cdot C(n-1,a)$ para $n > 1$. El código
+evita repetir el caso $n = 1$: arranca el acumulador en $a$ y multiplica por $a-1$
+exactamente $n-1$ veces, es decir, $\text{aux}(n-1, a) = a \cdot (a-1)^{n-1}$. La
+llamada recursiva es lo último que hace, por eso `aux` lleva `@tailrec`. Los casos
+límite se resuelven antes de entrar al ciclo: `n <= 0` devuelve $1$ (el mensaje
+vacío) y `a <= 0` devuelve $0$.
+
+#### Traza de `combinaciones(3, 26)`
+
+Con $n = 3$ y $a = 26$, se llama `aux(2, 26)` y cada paso multiplica por $25$:
+
+| Paso | `restantes` | `acc` entrante | `acc` resultante |
+| ---- | ----------- | -------------- | ---------------- |
+| 1 | 2 | 26 | 650 |
+| 2 | 1 | 650 | 16250 |
+| 3 | 0 | 16250 | caso base: 16250 |
+
+Produce $26 \cdot 25 \cdot 25 = 16250$, que coincide con el valor del enunciado.
+Los demás ejemplos se obtienen igual: `combinaciones(0, 26)` cae en `n <= 0` y da $1$;
+`combinaciones(1, 26)` llama `aux(0, 26)` y da $26$; `combinaciones(2, 2)` da
+$2 \cdot 1 = 2$.
+
+```mermaid
+sequenceDiagram
+    participant K as combinaciones(3, 26)
+    participant A1 as aux(2, 26)
+    participant A2 as aux(1, 650)
+    participant A3 as aux(0, 16250)
+
+    K->>A1: aux(n - 1, a) = aux(2, 26)
+    A1->>A2: tail call, acc = 26 * 25
+    A2->>A3: tail call, acc = 650 * 25
+    A3-->>K: return 16250
+```
+
+### 5.2 `vigenere(m, clave)`
+
+```scala
+def vigenere(m: Mensaje, clave: Clave): Mensaje = {
+  @tailrec
+  def aux(i: Int, j: Int, acc: Mensaje): Mensaje =
+    if (i >= m.length) acc
+    else {
+      val c = m(i)
+      if (esMinuscula(c)) {
+        val k = (((clave(j) - 'a') % letras) + letras) % letras
+        val cifrada = ((c - 'a' + k) % letras + 'a').toChar
+        aux(i + 1, (j + 1) % clave.length, acc + cifrada)
+      } else
+        aux(i + 1, j, acc + c)
+    }
+  if (clave.isEmpty) m else aux(0, 0, "")
+}
+```
+
+`aux` recorre el mensaje con `i` y la clave con `j`, que avanza en forma circular
+(`(j + 1) % clave.length`). La letra de la clave se convierte en un desplazamiento
+entre $0$ y $25$, se suma a la posición de `c` módulo $26$ y el resultado se acumula.
+Si `c` no es una letra minúscula, se copia tal cual **sin** avanzar `j`; así el
+espacio de `"hola mundo"` no consume clave. El caso base del ciclo es `i >= m.length`
+y, si la clave está vacía, se devuelve el mensaje sin tocar.
+
+#### Traza de `vigenere("ataque", "sol")`
+
+Clave `"sol"` → desplazamientos `s = 18`, `o = 14`, `l = 11`, que se repiten.
+
+| Paso | `i` | `j` | `m(i)` | Letra clave | `k` | `acc` resultante |
+| ---- | --- | --- | ------ | ----------- | --- | ---------------- |
+| 1 | 0 | 0 | `a` | `s` | 18 | `"s"` |
+| 2 | 1 | 1 | `t` | `o` | 14 | `"sh"` |
+| 3 | 2 | 2 | `a` | `l` | 11 | `"shl"` |
+| 4 | 3 | 0 | `q` | `s` | 18 | `"shli"` |
+| 5 | 4 | 1 | `u` | `o` | 14 | `"shlii"` |
+| 6 | 5 | 2 | `e` | `l` | 11 | `"shliip"` |
+| 7 | 6 | 0 | — | — | — | final: `"shliip"` |
+
+#### Traza de `vigenere("hola mundo", "ab")`
+
+Clave `"ab"` → `a = 0`, `b = 1`. El espacio entre las dos palabras no avanza `j`.
+
+| Paso | `i` | `j` | `m(i)` | Letra clave | `k` | `acc` resultante |
+| ---- | --- | --- | ------ | ----------- | --- | ---------------- |
+| 1 | 0 | 0 | `h` | `a` | 0 | `"h"` |
+| 2 | 1 | 1 | `o` | `b` | 1 | `"hp"` |
+| 3 | 2 | 0 | `l` | `a` | 0 | `"hpl"` |
+| 4 | 3 | 1 | `a` | `b` | 1 | `"hplb"` |
+| 5 | 4 | 2 | ` ` | — | — | `"hplb "` (copia, `j` sigue en 2) |
+| 6 | 5 | 2 | `m` | `a` | 0 | `"hplb m"` |
+| 7 | 6 | 3 | `u` | `b` | 1 | `"hplb mv"` |
+| 8 | 7 | 4 | `n` | `a` | 0 | `"hplb mvn"` |
+| 9 | 8 | 5 | `d` | `b` | 1 | `"hplb mvne"` |
+| 10 | 9 | 6 | `o` | `a` | 0 | `"hplb mvneo"` |
+| 11 | 10 | 7 | — | — | — | final: `"hplb mvneo"` |
+
+La `m` de `mundo` se cifra con la letra `a` de la clave, que es la que sigue a la
+`b` usada en la `a` de `hola`: el espacio se copió sin consumir clave.
+
+```mermaid
+sequenceDiagram
+    participant V as vigenere("hola mundo", "ab")
+    participant A1 as aux(0, 0, "")
+    participant A2 as aux(1, 1, "h")
+    participant A3 as aux(2, 0, "hp")
+    participant A5 as aux(5, 2, "hplb ")
+    participant A11 as aux(10, 7, "hplb mvneo")
+
+    V->>A1: aux(0, 0, "")
+    A1->>A2: 'h' con clave 'a', j -> 1
+    A2->>A3: 'o' con clave 'b', j -> 2 % 2 = 0
+    A3->>A5: cifra "la" y copia el espacio sin avanzar j
+    A5->>A11: tail call hasta i = m.length
+    A11-->>V: return "hplb mvneo"
+```
+
+Además, `vigenere("casa", "")` toma la rama `clave.isEmpty` y devuelve `"casa"` sin
+entrar al ciclo.
