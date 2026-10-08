@@ -22,6 +22,12 @@ class CifradosClasicosTest extends AnyFunSuite {
   test("cesar: zzz con 1 da aaa") { assert(cesar("zzz", 1) == "aaa") }
   test("cesar: 29 es lo mismo que 3") { assert(cesar("abc", 29) == "def") }
   test("cesar: el mensaje vacío sale vacío") { assert(cesar("", 5) == "") }
+//NUEVOS EJEMPLOS
+  test("cesar: abc con 1 da bcd") { assert(cesar("abc", 1) == "bcd") }
+  test("cesar: xyz con 3 da la vuelta y queda abc") { assert(cesar("xyz", 3) == "abc") }
+  test("cesar: abc con -1 da zab") { assert(cesar("abc", -1) == "zab") }
+  test("cesar: 26 da la vuelta completa") { assert(cesar("hola", 26) == "hola") }
+  test("cesar: -29 es lo mismo que -3") { assert(cesar("hola", -29) == "elix") }
 
   test("cesar: la puntuación y los dígitos pasan sin cambio") {
     assert(cesar("ab, 12!", 1) == "bc, 12!")
@@ -40,6 +46,16 @@ class CifradosClasicosTest extends AnyFunSuite {
   test("cesarCola: casa con 3 da fdvd") { assert(cesarCola("casa", 3) == "fdvd") }
   test("cesarCola: hola mundo con 1") { assert(cesarCola("hola mundo", 1) == "ipmb nvoep") }
   test("cesarCola: con 0 el mensaje no cambia") { assert(cesarCola("abc", 0) == "abc") }
+  //EJEMPLOS NUEVOS
+  test("cesarCola: xyz con 3 da abc") { assert(cesarCola("xyz", 3) == "abc") }
+  test("cesarCola: abc con -1 da zab") { assert(cesarCola("abc", -1) == "zab") }
+  test("cesarCola: el mensaje vacío sale vacío") { assert(cesarCola("", 7) == "") }
+  test("cesarCola: mayúsculas, dígitos y puntuación no cambian") {
+    assert(cesarCola("Hola, 2026!", 1) == "Hpmb, 2026!")
+  }
+  test("cesarCola: cifrar y descifrar es la identidad") {
+    assert(cesarCola(cesarCola("mensaje", 9), -9) == "mensaje")
+  }
 
   test("cesarCola: da lo mismo que la versión lineal") {
     val casos = List(("casa", 3), ("hola mundo", 1), ("zzz", 1), ("abc", 29),
@@ -79,6 +95,22 @@ class CifradosClasicosTest extends AnyFunSuite {
   test("frecuencias: en empate manda el orden alfabético") {
     assert(frecuencias("ba") == List(('a', 1), ('b', 1)))
   }
+  //NUEVOS EJEMPLOS
+  test("frecuencias: banana") {
+    assert(frecuencias("banana") == List(('a', 3), ('n', 2), ('b', 1)))
+  }
+  test("frecuencias: mississippi, empate entre i y s") {
+    assert(frecuencias("mississippi") == List(('i', 4), ('s', 4), ('p', 2), ('m', 1)))
+  }
+  test("frecuencias: el espacio no cuenta") {
+    assert(frecuencias("a b a") == List(('a', 2), ('b', 1)))
+  }
+  test("frecuencias: zzzyyx de mayor a menor") {
+    assert(frecuencias("zzzyyx") == List(('z', 3), ('y', 2), ('x', 1)))
+  }
+  test("frecuencias: todo empatado sale en orden alfabético") {
+    assert(frecuencias("abc123abc") == List(('a', 2), ('b', 2), ('c', 2)))
+  }
 
   // Punto 4 -------------------------------------------------------------------
 
@@ -108,6 +140,23 @@ class CifradosClasicosTest extends AnyFunSuite {
     // En este mensaje la letra más frecuente es la 'a', no la 'e'.
     val original = "cada casa amarilla"
     assert(romperCesar(cesar(original, 7)) != original)
+  }
+  //NUEVOS EJEMPLOS
+  test("desplazamientoProbable: e está 0 después de e") {
+    assert(desplazamientoProbable("e") == 0)
+  }
+  test("desplazamientoProbable: z está 21 después de e") {
+    assert(desplazamientoProbable("z") == 21)
+  }
+  test("desplazamientoProbable: aaab, con a como la más frecuente") {
+    assert(desplazamientoProbable("aaab") == 22)
+  }
+  test("romperCesar: recupera un mensaje con muchas e") {
+    val original = "el elefante es enorme"
+    assert(romperCesar(cesar(original, 4)) == original)
+  }
+  test("romperCesar: un mensaje sin letras queda igual") {
+    assert(romperCesar("123 !?") == "123 !?")
   }
 
   // Punto 5 -------------------------------------------------------------------
@@ -151,5 +200,21 @@ class CifradosClasicosTest extends AnyFunSuite {
 
   test("vigenere: con una clave de una sola letra es un César") {
     assert(vigenere("hola mundo", "d") == cesar("hola mundo", 3))
+  }
+  //NUEVOS EJEMPLOS
+  test("combinaciones: 2 letras sobre 26 dan 650") {
+    assert(combinaciones(2, 26) == BigInt(650))
+  }
+  test("combinaciones: 4 letras sobre 26 dan 406250") {
+    assert(combinaciones(4, 26) == BigInt(406250))
+  }
+  test("vigenere: abc con la clave b es un desplazamiento de 1") {
+    assert(vigenere("abc", "b") == "bcd")
+  }
+  test("vigenere: la clave se repite cuando el mensaje es más largo") {
+    assert(vigenere("aaaa", "abc") == "abca")
+  }
+  test("vigenere: el espacio no consume letra de la clave (abc)") {
+    assert(vigenere("a b", "bc") == "b d")
   }
 }
